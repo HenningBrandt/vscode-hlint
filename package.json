@@ -1,8 +1,8 @@
 {
-    "name": "hlint",
-    "displayName": "hlint",
+    "name": "hlint-hpack",
+    "displayName": "hlint-hpack",
     "description": "Lint Haskell with HLint",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=lunaryorn.hlint",
     "bugs": "https://github.com/lunaryorn/vscode-hlint/issues",
     "icon": "haskell-logo.png",
@@ -26,7 +26,7 @@
     },
     "categories": [
         "Linters",
-        "Languages",
+        "Programming Languages",
         "Formatters"
     ],
     "keywords": [
@@ -69,12 +69,14 @@
     "dependencies": {
         "rxjs": "^5.4.0",
         "semver": "^5.5.0",
-        "tmp": "^0.0.31"
+        "tmp": "^0.0.31",
+        "js-yaml": "3.13.1"
     },
     "devDependencies": {
         "@types/node": "^6.0.40",
         "@types/semver": "^5.5.0",
         "@types/tmp": "^0.0.33",
+        "@types/js-yaml": "3.12.3",
         "tslint": "^5.2.0",
         "tslint-immutable": "^4.0.1",
         "tslint-language-service": "^0.9.6",

@@ -18,6 +18,7 @@ import * as fs from "fs";
 import { Observable, Observer } from "rxjs/Rx";
 import * as semver from "semver";
 import * as tmp from "tmp";
+import * as yaml from "js-yaml"
 
 import {
     Diagnostic,
@@ -46,6 +47,12 @@ const HLINT_SOURCE = "hlint";
 const commands = {
     APPLY_REFACTORINGS: "hlint.applyRefactorings",
 };
+
+/**
+ * After activiation, this holds the default haskell language extensions
+ * as specified by hpacks package.yaml file.
+ */
+var defaultLanguageExtensions: Array<string> = []
 
 /**
  * Wrap a command with "stack exec".
@@ -196,6 +203,33 @@ const temporaryFile = (contents: string): Observable<ITemporaryFile> =>
     });
 
 /**
+ * Parse the default haskell language extensions from package.yaml.
+ * 
+ * @return An Array containing the language extensions as arguments
+ *         for the 'refactor' command.
+ */
+const parseDefaultLanguageExtensions = () =>
+// TODO: Update when package.yaml changes
+    runInWorkspace(["stack", "path"], undefined)
+        .map((stdout) => {
+            const re = /project-root:\s(.+)/
+            const match = stdout.match(re)
+            if (match == null) return []
+            const packageFile = match[1] + "/package.yaml"
+
+            if (fs.existsSync(packageFile)) {
+                try {
+                    const doc = yaml.safeLoad(fs.readFileSync(packageFile, 'utf8'));
+                    return doc["default-extensions"].map((ext: string) => "-X" + ext)
+                } catch (e) {
+                    return [];
+                }
+            } else {
+                return []
+            }
+        });
+
+/**
  * Refactor a piece of code with "refactor".
  *
  * @param code The code to refactor.
@@ -208,7 +242,7 @@ const refactor =
         temporaryFile(refactorings)
             .concatMap((refactFile) =>
                 runInWorkspace(
-                    stackExec(["refactor", "--refact-file", refactFile.path]),
+                    stackExec(["refactor", "--refact-file", refactFile.path].concat(defaultLanguageExtensions)),
                     code,
                 ).finally(() => refactFile.cleanup()))
             .map((stdout) => {
@@ -496,5 +530,11 @@ please install the latest release from Hackage or Stackage`);
         registerRefactoringProvidersAndCommands(context);
     });
 
-    return Observable.concat(enableLinting, enableRefactoring).toPromise();
+    const loadLangExtensions = parseDefaultLanguageExtensions()
+    .do((exts) => {
+        console.log("lunaryorn.hlint: found the following default language extensions: ", exts)
+        defaultLanguageExtensions = exts
+    });
+
+    return Observable.concat(enableLinting, enableRefactoring, loadLangExtensions).toPromise();
 }
